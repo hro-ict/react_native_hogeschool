@@ -1,89 +1,174 @@
 // https://github.com/rnmapbox/maps/issues/1958
 
 import * as React from 'react';
-import { Text, View, Alert } from 'react-native';
+import { Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import { MaterialCommunityIcons, FontAwesome5, FontAwesome, Feather  } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MaterialCommunityIcons, FontAwesome, Feather } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 
-import { MapScreen } from './components/MapScreen';
-import {List} from "./components/List";
+//localdatabase
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-function Feed() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Feed!</Text>
-    </View>
-  );
-}
 
-function Profile() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Profile!</Text>
-    </View>
-  );
-}
+import MapScreen from "./components/MapScreen";
+import List from "./components/List";
+import Settings from "./components/Settings";
 
-function Notifications() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Notifications!</Text>
-    </View>
-  );
-}
+
+
+
+
+
+//save theme data in locale database
+const storeData = async (value) => {
+  try {
+    await AsyncStorage.setItem('theme', value);
+  } catch (e) {
+    // saving error
+  }
+};
+
+
+
+//save hotspots in locale database
+const storeData_hotspots = async (value) => {
+  try {
+    const jsonValue = JSON.stringify(value);
+    await AsyncStorage.setItem('hotspots', jsonValue);
+  } catch (e) {
+    // saving error
+  }
+};
+
+
+//get hotspots from web API
+
+const get_hotspots_from_web_api = () => {
+  return fetch('http://143.47.183.218:3389/hotspots')
+    .then(response => response.json())
+    .then(json => {
+      storeData_hotspots(json.hotspots)
+      
+      return json;
+      
+    })
+    .catch(error => {
+      console.error(error);
+    });
+};
+
+get_hotspots_from_web_api()
+let { status } = await Location.requestForegroundPermissionsAsync();
+
+//get hotspots from local
+const getData_hotspots = async () => {
+  try {
+    const jsonValue = await AsyncStorage.getItem('hotspots');
+    console.log(jsonValue)
+    return jsonValue != null ? JSON.parse(jsonValue) : null;
+  } catch (e) {
+    // error reading value
+  }
+};
+
+getData_hotspots()
+
+
 
 const Tab = createMaterialBottomTabNavigator();
 
 function MyTabs() {
-  return (
-     
 
-   <Tab.Navigator
-    detachInactiveScreens={false}
+const [theme, setTheme]= React.useState("")
+const getData = async () => {
+  try {
+    const value = await AsyncStorage.getItem('theme');
+    if (value !== null) {
+      // value previously stored
+   
+      setTheme(value)
+    }
+  } catch (e) {
+    // error reading value
+  }
+};
+
+console.log(theme);
+
+getData()
+  return (
+    <View style={{flex:1, backgroundColor:"#666"}}>
+    <Tab.Navigator
       initialRouteName="List"
       activeColor="#e91e63"
-      barStyle={{ backgroundColor: 'tomato' }}
+      labelStyle={{ fontSize: 12 }}
+      style={{ backgroundColor: 'tomato' }}
+
     >
+
+    <Tab.Screen
+        name="List"
+        component={List}
+        initialParams={{ age: 99 }}
+        options={{
+          tabBarLabel: 'List',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="list-ul" size={24} color="tomato" />
+          ),
+        }}
+      />
       <Tab.Screen
         name="Feed"
-        component={List}
+        component={MapScreen}
+         initialParams={{ age: 45 }}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="home" color={color} size={26} />
+            <Feather name="map" size={24} color="tomato" />
           ),
         }}
       />
-      <Tab.Screen
-        name="Notifications"
+
+        <Tab.Screen
+        name="Marker"
         component={MapScreen}
+         initialParams={{ age: 45 }}
         options={{
-          tabBarLabel: 'Updates',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="bell" color={color} size={26} />
+         <FontAwesome name="map-marker" size={24} color="tomato" />
           ),
         }}
       />
+
+
+
+   
+
+
+      
       <Tab.Screen
-        onPress={() => Alert.alert(location.adress) }
         name="Profile"
-        component={Profile}
+        component={Settings}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="account" color={color} size={26} />
+          <Feather name="settings" size={24} color="tomato" />
           ),
         }}
       />
     </Tab.Navigator>
+       </View>
   );
 }
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <MyTabs />
+    <NavigationContainer style={{ backgroundColor:"black"}}>
+      <MyTabs style={{ backgroundColor:"#000000"}} />
     </NavigationContainer>
   );
 }
+
